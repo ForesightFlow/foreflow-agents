@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the accompanying paper."
+type: software
+title: "ForeFlow Agents"
+abstract: >
+  Five on-chain forecasting agents implementing the coordination configurations
+  from "Coordination as an Architectural Layer for LLM-Based Multi-Agent Systems".
+  Each agent wraps a pre-registered coordination configuration with ERC-8004
+  commit-reveal on Polygon.
+authors:
+  - family-names: Nechepurenko
+    given-names: Maksym
+  - family-names: Shuvalov
+    given-names: Pavel
+version: "0.2.0"
+date-released: "2026-04-28"
+license: MIT
+repository-code: "https://github.com/ForesightFlow/foreflow-agents"
+preferred-citation:
+  type: article
+  title: >
+    Coordination as an Architectural Layer for LLM-Based Multi-Agent Systems:
+    A Position Paper with an Information-Controlled Empirical Design
+  authors:
+    - family-names: Nechepurenko
+      given-names: Maksym
+    - family-names: Shuvalov
+      given-names: Pavel
+  year: 2026
+  notes: "Working paper; arXiv DOI to be added after submission"
