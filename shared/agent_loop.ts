@@ -15,9 +15,15 @@ import {
 import type { CoordinationConfig, CoordinationConfigParams } from 'coordination-experiment';
 import type { AgentAccount } from './env.js';
 import { DRY_RUN, LEAD_TIME_SECONDS, MODE } from './env.js';
-import { buildAnthropicClient } from './llm.js';
+import { buildAnthropicClient, DEFAULT_MODEL_ID } from './llm.js';
 import { buildConfigurableTools } from './tools.js';
 import { summariesToMarkets, probToBasisPoints } from './translate.js';
+import {
+  emitPredictionStarted,
+  emitLlmCall,
+  emitPredictionComplete,
+  emitPredictionFailed,
+} from './events.js';
 
 const DEFAULT_PARAMS: CoordinationConfigParams = {
   agentCount: 3,
@@ -96,6 +102,7 @@ async function discover(account: AgentAccount | null): Promise<void> {
 // --------------------------------------------------------------------------
 
 async function predict(
+  agentName: string,
   config: CoordinationConfig,
   account: AgentAccount | null,
   params: CoordinationConfigParams,
@@ -125,17 +132,65 @@ async function predict(
     const reasoning: string[] = [];
 
     for (const market of markets) {
+      const roundId = String(round.roundId);
+      // Use conditionId when present; fall back to a deterministic synthetic key.
+      const marketId = market.conditionId ?? `unknown-${roundId}-${market.index}`;
+
       console.log(
         `[${config.name}] round=${round.roundId} market[${market.index}] "${market.question}"`,
       );
+
+      emitPredictionStarted(agentName, config.name, roundId, marketId, market.question, {
+        marketBaseline: market.midPrice,
+        modelId: DEFAULT_MODEL_ID,
+      });
+
       try {
         const result = await config.predict({ market, tools, llm, params });
+
+        // Emit one llm_call event per call record in the trace.
+        for (const call of result.trace.calls) {
+          emitLlmCall(
+            roundId,
+            marketId,
+            call.callIndex,
+            call.agentRole,
+            call.request.systemPrompt,
+            call.request.userPrompt,
+            call.response.text,
+            call.response.toolCalls.length > 0 ? call.response.toolCalls : undefined,
+            call.usage.promptTokens,
+            call.usage.completionTokens,
+            call.costUsd ?? 0,
+            call.durationMs,
+          );
+        }
+
+        const totalInputTokens = result.trace.calls.reduce(
+          (s, c) => s + c.usage.promptTokens,
+          0,
+        );
+        const totalOutputTokens = result.trace.calls.reduce(
+          (s, c) => s + c.usage.completionTokens,
+          0,
+        );
+
+        emitPredictionComplete(
+          roundId,
+          marketId,
+          result.probability,
+          totalInputTokens,
+          totalOutputTokens,
+          result.trace.totalCostUsd,
+        );
+
         const bp = probToBasisPoints(result.probability);
         predictions.push(bp);
         const lastCall = result.trace.calls[result.trace.calls.length - 1];
         reasoning.push(lastCall?.response.text ?? '');
         console.log(`  p=${result.probability.toFixed(4)} bp=${bp}`);
       } catch (err) {
+        emitPredictionFailed(roundId, marketId, err instanceof Error ? err.message : String(err));
         console.error(`  predict failed for market[${market.index}]:`, err);
         predictions.push(5_000); // 50% fallback — failure is logged, not hidden
         reasoning.push('');
@@ -184,6 +239,7 @@ async function predict(
 // --------------------------------------------------------------------------
 
 export async function runAgentLoop(
+  agentName: string,
   config: CoordinationConfig,
   account: AgentAccount | null,
   params?: Partial<CoordinationConfigParams>,
@@ -198,6 +254,6 @@ export async function runAgentLoop(
     await discover(account);
   }
   if (MODE === 'predict' || MODE === 'all') {
-    await predict(config, account, mergedParams);
+    await predict(agentName, config, account, mergedParams);
   }
 }

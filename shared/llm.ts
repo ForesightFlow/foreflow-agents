@@ -3,7 +3,7 @@ import type { AgentTools } from 'coordination-experiment';
 import { ANTHROPIC_API_KEY } from './env.js';
 
 // Rates as of 2026-04-27 — verify before each production run.
-const DEFAULT_MODEL_ID = 'claude-opus-4-6';
+export const DEFAULT_MODEL_ID = 'claude-opus-4-6';
 const INPUT_USD_PER_MILLION = 5;
 const OUTPUT_USD_PER_MILLION = 25;
 

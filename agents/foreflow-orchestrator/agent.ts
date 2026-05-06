@@ -7,4 +7,4 @@ const account = loadAgentAccount('ORCHESTRATOR');
 
 if (DRY_RUN) console.log('[foreflow-orchestrator] dry-run mode — no on-chain transactions');
 
-await runAgentLoop(config, account);
+await runAgentLoop('foreflow-orchestrator', config, account);

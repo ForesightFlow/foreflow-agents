@@ -7,4 +7,4 @@ const account = loadAgentAccount('DEBATE');
 
 if (DRY_RUN) console.log('[foreflow-debate] dry-run mode — no on-chain transactions');
 
-await runAgentLoop(config, account);
+await runAgentLoop('foreflow-debate', config, account);

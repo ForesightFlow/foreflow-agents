@@ -11,7 +11,8 @@ if (existsSync(envPath)) {
   for (const line of readFileSync(envPath, 'utf8').split('\n')) {
     const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
     if (m && !(m[1] in process.env)) {
-      process.env[m[1]] = m[2].replace(/^"(.*)"$/, '$1');
+      const raw = m[2].replace(/\s+#.*$/, '').trim();
+      process.env[m[1]] = raw.replace(/^"(.*)"$/, '$1');
     }
   }
 }
@@ -51,12 +52,17 @@ export const DRY_RUN: boolean =
   !process.argv.includes('--live') && process.env.DRY_RUN !== 'false';
 
 // --------------------------------------------------------------------------
-// Anthropic — required for predict/all modes
+// Anthropic — required for predict/all modes; optional in dry-run / discover
 // --------------------------------------------------------------------------
 
-export const ANTHROPIC_API_KEY: string = (() => {
+export const ANTHROPIC_API_KEY: string | undefined = (() => {
   const v = process.env.ANTHROPIC_API_KEY;
-  if (!v) throw new ConfigError('ANTHROPIC_API_KEY is not set. Check .env.example.');
+  if (!v && !DRY_RUN) {
+    throw new ConfigError(
+      'ANTHROPIC_API_KEY is not set. Check .env.example. ' +
+        '(Not required for dry-run or discover-only mode.)',
+    );
+  }
   return v;
 })();
 

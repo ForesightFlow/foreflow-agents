@@ -7,4 +7,4 @@ const account = loadAgentAccount('PIPELINE');
 
 if (DRY_RUN) console.log('[foreflow-pipeline] dry-run mode — no on-chain transactions');
 
-await runAgentLoop(config, account);
+await runAgentLoop('foreflow-pipeline', config, account);

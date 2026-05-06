@@ -7,4 +7,4 @@ const account = loadAgentAccount('ENSEMBLE');
 
 if (DRY_RUN) console.log('[foreflow-ensemble] dry-run mode — no on-chain transactions');
 
-await runAgentLoop(config, account);
+await runAgentLoop('foreflow-ensemble', config, account);
