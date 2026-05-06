@@ -57,11 +57,28 @@ export interface PredictionFailedEvent {
   reason: string;
 }
 
+export interface CommittedEvent {
+  kind: 'committed';
+  timestamp: number;
+  predictionRef: { roundId: string; marketId: string };
+  txHash: string;
+  salt: string;
+}
+
+export interface RevealedEvent {
+  kind: 'revealed';
+  timestamp: number;
+  predictionRef: { roundId: string; marketId: string };
+  txHash: string;
+}
+
 export type AgentEvent =
   | PredictionStartedEvent
   | LlmCallEvent
   | PredictionCompleteEvent
-  | PredictionFailedEvent;
+  | PredictionFailedEvent
+  | CommittedEvent
+  | RevealedEvent;
 
 /** Emit one compact JSON line on stdout. */
 export function emitEvent(event: AgentEvent): void {
@@ -154,5 +171,33 @@ export function emitPredictionFailed(
     timestamp: Math.floor(Date.now() / 1000),
     predictionRef: { roundId, marketId },
     reason,
+  });
+}
+
+export function emitCommitted(
+  roundId: string,
+  marketId: string,
+  txHash: string,
+  salt: string,
+): void {
+  emitEvent({
+    kind: 'committed',
+    timestamp: Math.floor(Date.now() / 1000),
+    predictionRef: { roundId, marketId },
+    txHash,
+    salt,
+  });
+}
+
+export function emitRevealed(
+  roundId: string,
+  marketId: string,
+  txHash: string,
+): void {
+  emitEvent({
+    kind: 'revealed',
+    timestamp: Math.floor(Date.now() / 1000),
+    predictionRef: { roundId, marketId },
+    txHash,
   });
 }

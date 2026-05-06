@@ -42,6 +42,7 @@ declare module 'foresight-arena' {
     salt: string;
     reasoning?: string[];
     committedAt?: string;
+    marketIds?: string[];
   }
 
   export interface AgentScore {

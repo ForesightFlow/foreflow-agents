@@ -16,13 +16,15 @@ import type { CoordinationConfig, CoordinationConfigParams } from 'coordination-
 import type { AgentAccount } from './env.js';
 import { DRY_RUN, LEAD_TIME_SECONDS, MODE } from './env.js';
 import { buildAnthropicClient, DEFAULT_MODEL_ID } from './llm.js';
-import { buildConfigurableTools } from './tools.js';
+import { buildConfigurableTools, BudgetedLLMClient } from './tools.js';
 import { summariesToMarkets, probToBasisPoints } from './translate.js';
 import {
   emitPredictionStarted,
   emitLlmCall,
   emitPredictionComplete,
   emitPredictionFailed,
+  emitCommitted,
+  emitRevealed,
 } from './events.js';
 
 const DEFAULT_PARAMS: CoordinationConfigParams = {
@@ -70,6 +72,14 @@ async function discover(account: AgentAccount | null): Promise<void> {
         account,
       });
       console.log(`[discover] revealed round=${entry.roundId} tx=${result.txHash}`);
+
+      const revealedRoundId = String(entry.roundId);
+      const entryMarketIds = entry.marketIds;
+      if (entryMarketIds) {
+        for (const marketId of entryMarketIds) {
+          emitRevealed(revealedRoundId, marketId, result.txHash);
+        }
+      }
 
       if (entry.reasoning && entry.reasoning.length > 0) {
         try {
@@ -126,7 +136,7 @@ async function predict(
 
     // Single LLM client + tools pair shared across all markets in this round.
     const tools = buildConfigurableTools(markets);
-    const llm = buildAnthropicClient(tools);
+    const llm = new BudgetedLLMClient(buildAnthropicClient(tools));
 
     const predictions: number[] = [];
     const reasoning: string[] = [];
@@ -219,6 +229,14 @@ async function predict(
       });
       console.log(`[${config.name}] committed round=${round.roundId} tx=${result.txHash}`);
 
+      const roundId = String(round.roundId);
+      const marketIds = markets.map(
+        (m) => m.conditionId ?? `unknown-${roundId}-${m.index}`,
+      );
+      for (const marketId of marketIds) {
+        emitCommitted(roundId, marketId, result.txHash, salt);
+      }
+
       const updatedQueue = getRevealQueue();
       updatedQueue.push({
         roundId: Number(round.roundId),
@@ -226,6 +244,7 @@ async function predict(
         salt,
         reasoning,
         committedAt: new Date().toISOString(),
+        marketIds,
       });
       saveRevealQueue(updatedQueue);
     } catch (err) {
