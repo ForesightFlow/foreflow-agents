@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ConfigurableAgentTools, PolymarketAgentTools } from 'coordination-experiment';
 import type { AgentTools, LLMClient, Market, MarketDetails, PricePoint, SearchResult, GenerateRequest, GenerateResponse } from 'coordination-experiment';
+import { WEB_SEARCH_BACKEND } from './env.js';
 
 const MAX_TOOL_CALLS = parseInt(process.env.MAX_TOOL_CALLS_PER_ROLE ?? '15', 10);
 
@@ -79,10 +80,10 @@ export class BudgetedLLMClient implements LLMClient {
   }
 }
 
-// Web search is ENABLED for all live agents.
-// Contrast with Phase 1A historical sandbox where web search is OFF (no-leakage requirement).
 export function buildConfigurableTools(markets: Market[]): BoundedTools {
   const polymarket = new PolymarketAgentTools(markets);
-  const configurable = new ConfigurableAgentTools(polymarket, true);
+  // anthropic backend: disable local searchWeb — server-side web_search_20260209 handles it.
+  // tavily backend: enable searchWeb → PolymarketAgentTools dispatches via Tavily HTTP API.
+  const configurable = new ConfigurableAgentTools(polymarket, WEB_SEARCH_BACKEND === 'tavily');
   return new BoundedTools(configurable);
 }

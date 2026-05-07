@@ -32,9 +32,18 @@ npm install
 
 ```bash
 cp .env.example .env
-# Fill in ANTHROPIC_API_KEY, TAVILY_API_KEY
+# Fill in ANTHROPIC_API_KEY
 # Add FOREFLOW_*_AGENT_KEY values after registration (see below)
 ```
+
+**Web search backend** (`WEB_SEARCH_BACKEND` env var, default `anthropic`):
+
+| Value | Behaviour | Key required |
+|---|---|---|
+| `anthropic` (default) | Uses Anthropic native `web_search_20260209` tool — executed server-side, billed via Anthropic API at ~$0.01/search. No extra key needed. | — |
+| `tavily` | Uses Tavily HTTP API — original v0.3.0 behaviour. | `TAVILY_API_KEY` |
+
+All five agents run with web search **enabled** in production (§4.6 of arXiv 2605.03310). Only the backend provider differs between the two modes; prompt scaffolding and coordination logic are unchanged.
 
 ### 3. Register agents (one-time, using the foresight-arena CLI)
 

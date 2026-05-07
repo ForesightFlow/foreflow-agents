@@ -14,7 +14,7 @@ import {
 } from 'foresight-arena';
 import type { CoordinationConfig, CoordinationConfigParams } from 'coordination-experiment';
 import type { AgentAccount } from './env.js';
-import { DRY_RUN, LEAD_TIME_SECONDS, MODE } from './env.js';
+import { DRY_RUN, LEAD_TIME_SECONDS, MODE, WEB_SEARCH_BACKEND } from './env.js';
 import { buildAnthropicClient, DEFAULT_MODEL_ID } from './llm.js';
 import { buildConfigurableTools, BudgetedLLMClient } from './tools.js';
 import { summariesToMarkets, probToBasisPoints } from './translate.js';
@@ -268,6 +268,7 @@ export async function runAgentLoop(
   console.log(
     `[${config.name}] mode=${MODE} dry_run=${DRY_RUN} account=${account?.address ?? '(none — dry-run only)'}`,
   );
+  console.log(`[web_search] backend=${WEB_SEARCH_BACKEND}`);
 
   if (MODE === 'discover' || MODE === 'all') {
     await discover(account);

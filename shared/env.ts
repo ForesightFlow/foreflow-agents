@@ -67,6 +67,25 @@ export const ANTHROPIC_API_KEY: string | undefined = (() => {
 })();
 
 // --------------------------------------------------------------------------
+// Web search backend
+// --------------------------------------------------------------------------
+
+const rawBackend = (process.env.WEB_SEARCH_BACKEND ?? 'anthropic').toLowerCase();
+if (rawBackend !== 'anthropic' && rawBackend !== 'tavily') {
+  throw new ConfigError(
+    `WEB_SEARCH_BACKEND="${rawBackend}" is not valid. Accepted: anthropic | tavily`,
+  );
+}
+if (rawBackend === 'tavily' && !process.env.TAVILY_API_KEY) {
+  throw new ConfigError(
+    'WEB_SEARCH_BACKEND=tavily requires TAVILY_API_KEY to be set. ' +
+      'Get a key at https://tavily.com/ or switch to WEB_SEARCH_BACKEND=anthropic (default).',
+  );
+}
+/** Which web search backend agents use. Default: "anthropic" (native server-side tool). */
+export const WEB_SEARCH_BACKEND: 'anthropic' | 'tavily' = rawBackend as 'anthropic' | 'tavily';
+
+// --------------------------------------------------------------------------
 // Per-agent wallets
 // --------------------------------------------------------------------------
 
